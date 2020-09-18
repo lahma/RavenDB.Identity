@@ -7,7 +7,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>RavenDB.Identity</AssemblyName>
     <Title>RavenDB Identity for ASP.NET Core</Title>
-    <PackageId>RavenDB.Identity</PackageId>
+    <PackageId>RavenDB.Identity-FBS</PackageId>
     <PackageTags>ravendb identity aspnetcore membership authentication nosql authorization</PackageTags>
     <PackageProjectUrl>https://github.com/JudahGabriel/RavenDB.Identity</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Raven.Client.Documents;
-using Raven.Client.Documents.Operations;
+using Raven.Client.Documents.Linq;
 using Raven.Client.Documents.Operations.CompareExchange;
 using Raven.Client.Documents.Session;
 using System;
@@ -10,10 +10,6 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Raven.Client.Documents.Operations.Backups;
-using System.Diagnostics;
-using Newtonsoft.Json.Converters;
 
 namespace Raven.Identity
 {
@@ -267,7 +263,7 @@ namespace Raven.Identity
         /// <inheritdoc />
         public virtual  Task<TUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
         {
-            return DbSession.Query<TUser>()
+            return DbSession.Query<TUser, IdentityUserIndex<TUser>>()
                 .SingleOrDefaultAsync(u => u.UserName == normalizedUserName, cancellationToken);
         }
 
@@ -306,8 +302,11 @@ namespace Raven.Identity
         /// <inheritdoc />
         public virtual Task<TUser> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
         {
-            return DbSession.Query<TUser>()
-                .FirstOrDefaultAsync(u => u.Logins.Any(l => l.LoginProvider == loginProvider && l.ProviderKey == providerKey));
+            var key = loginProvider + "|" + providerKey;
+            return DbSession.Query<IdentityUserIndex<TUser>.Result, IdentityUserIndex<TUser>>()
+                .Where(u => u.LoginProviderIdentifiers.Contains(key))
+                .As<TUser>()
+                .FirstOrDefaultAsync(cancellationToken);
         }
 
         #endregion
@@ -365,7 +364,7 @@ namespace Raven.Identity
                 throw new ArgumentNullException(nameof(claim));
             }
 
-            var list = await DbSession.Query<TUser>()
+            var list = await DbSession.Query<TUser, IdentityUserIndex<TUser>>()
                 .Where(u => u.Claims.Any(c => c.ClaimType == claim.Type && c.ClaimValue == claim.Value))
                 .ToListAsync();
             return list;
@@ -449,10 +448,10 @@ namespace Raven.Identity
                 throw new ArgumentNullException(nameof(roleName));
             }
 
-            var users = await DbSession.Query<TUser>()
+            var users = await DbSession.Query<TUser, IdentityUserIndex<TUser>>()
                 .Where(u => u.Roles.Contains(roleName, StringComparer.InvariantCultureIgnoreCase))
-                .Take(1024)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
+
             return users;
         }
 
